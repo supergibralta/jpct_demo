@@ -7,72 +7,34 @@ import java.awt.image.*;
 import com.threed.jpct.*;
 import com.threed.jpct.util.*;
 
-/**
- * This is a simple demonstration of how a first-person-shooter like application
- * can be implementated using jPCT. It shows fps-like movement and collision detection
- * as well as loading a 3DS-level, some OcTree-stuff etc.
- */
+
 class JPCTDemo {
 
-   /**
-    * The starting position of the player
-    */
    private final static SimpleVector STARTING_POS=new SimpleVector(800, -120, -400);
 
-   /**
-    * The radius of the sphere used for sphere/polygon collision detection
-    */
    private final static float COLLISION_SPHERE_RADIUS=8f;
 
-   /**
-    * The "height" of the player, i.e. how many units the camera is loacted above the ground.
-    */
    private final static float PLAYER_HEIGHT=30f;
 
-   /**
-    * The dimensions of the ellipsoid used for collision detection. This represents the "size"
-    * of the player
-    */
    private final static SimpleVector ELLIPSOID_RADIUS=new SimpleVector(COLLISION_SPHERE_RADIUS,PLAYER_HEIGHT/2f,COLLISION_SPHERE_RADIUS);
-
-   /**
-   * The speed with which the player will fall if there's no ground below his feet
-   */
+   
+   /*0F8313C138679F0957BD9968EB37060564EADFB73C67A85FA761C40FE26FD8BD751D4E76D9FEC0EB1F84BA5A2E5E7949A3CD6F81E40BBBA29A8FB20FFF2BF0A428526775394AA2D79CF431A43BB739DC742ECD6F954189C45D5267B17FFE38D7B99E5BDFCBA68D1A*/
+   
    private final static float GRAVITY=4f;
 
-   /**
-    * How fast the player will move (in world units)
-    */
    private final static float MOVE_SPEED=2.5f;
 
-   /**
-    * How fast the player will turn
-    */
    private final static float TURN_SPEED=0.06f;
 
-   /**
-    * A flag that signals a change of the renderer (don't ask about the 35 here....)
-    */
+   
    private final static int SWITCH_RENDERER=35;
 
-   /**
-    * Should we try to do fullscreen?
-    */
    private boolean fullscreen=false;
 
-   /**
-    * Are we using OpenGL?
-    */
    private boolean openGL=false;
-
-   /**
-    * Are we rendering in wireframe mode?
-    */
+   
    private boolean wireframe=false;
 
-   /**
-    * Some jPCT related stuff...
-    */
    private Object3D level=null;
    private Object3D weapon=null;
    private Object3D elevator=null;
@@ -81,27 +43,14 @@ class JPCTDemo {
    private TextureManager texMan=null;
    private Camera camera=null;
 
-   /**
-    * The texture used for blitting the framerate
-    */
    private Texture numbers=null;
 
-   /**
-    * playerDirection stores the player's current orientation, so that the player's
-    * movement is decoupled from the actual camera.
-    */
    private Matrix playerDirection=new Matrix();
    private SimpleVector tempVector=new SimpleVector();
 
-   /**
-    * Default size of the framebuffer
-    */
    private int width=640;
    private int height=480;
 
-   /**
-    * Some AWT related stuff
-    */
    private Frame frame=null;
    private Graphics gFrame=null;
    private BufferStrategy bufferStrategy=null;
@@ -121,9 +70,6 @@ class JPCTDemo {
    private boolean isIdle=false;
    private boolean exit=false;
 
-   /**
-    * Flags for the keys
-    */
    private boolean left=false;
    private boolean right=false;
    private boolean up=false;
@@ -131,33 +77,18 @@ class JPCTDemo {
    private boolean forward=false;
    private boolean back=false;
 
-   /**
-    * The KeyMapper that offers a uniform way to access
-    * the keyboard in hard- and software-mode
-    */
    private KeyMapper keyMapper=null;
 
-   /**
-    * Some vars to handle the elevator
-    */
    float elevatorOffset=-0.8f;
    float elevatorPosition=-90f;
    int elevatorCountdown=50;
 
-   /**
-    * Very complex stuff...impossible to explain...
-    */
    public static void main(String[] args) {
       JPCTDemo start=new JPCTDemo(args);
    }
 
-   /**
-    * The constructor. Here we are initializing things...
-    */
    private JPCTDemo(String[] args) {
-      /**
-       * Evaluate the commandline parameters
-       */
+
       for (int i=0; i<args.length; i++) {
          if (args[i].equals("fullscreen")) {
             fullscreen=true;
@@ -201,17 +132,9 @@ class JPCTDemo {
       fps=0;
       lastFps=0;
 
-      /**
-       * Initialize the World instance and get the TextureManager (a singleton)
-       */
       theWorld=new World();
       texMan=TextureManager.getInstance();
 
-      /**
-       * Setup the lighting. We are not using overbright lighting because the OpenGL
-       * renderer can't do it, but we are using RGB-scaling. Some hardware/drivers
-       * for OpenGL don't support this.
-       */
       Config.fadeoutLight=true;
       Config.linearDiv=100;
       Config.lightDiscardDistance=350;
@@ -219,9 +142,7 @@ class JPCTDemo {
       theWorld.getLights().setRGBScale(Lights.RGB_SCALE_2X);
       theWorld.setAmbientLight(10, 15, 15);
 
-      /**
-       * Place the lightsources...
-       */
+
       theWorld.addLight(new SimpleVector(820, -150, -400), 5, 20, 15);
       theWorld.addLight(new SimpleVector(850, -130, -580), 20, 18, 2);
       theWorld.addLight(new SimpleVector(850, -130, -760), 15, 10, 15);
@@ -235,20 +156,10 @@ class JPCTDemo {
       theWorld.addLight(new SimpleVector(870, -230, -190), 15, 20, 20);
       theWorld.addLight(new SimpleVector(540, -190, -180), 15, 15, 15);
 
-      /**
-       * We are using fog. Please note that the fog implementation is not very well suited for
-       * any other fog color than black when using OpenGL's lighting model.
-       */
       theWorld.setFogging(World.FOGGING_ENABLED);
       theWorld.setFogParameters(500, 0, 0, 0);
       Config.farPlane=500;
 
-      /**
-       * Load the textures needed and add them to the TextureManager. We are loading the "numbers"
-       * texture for blitting the framerate as well as the weapon's environment map and all JPGs
-       * that can be found in the "textures"-directory. The 3DS file of the level contains
-       * materials that are pointing to these textures (identified by name).
-       */
       char c=File.separatorChar;
       numbers=new Texture("textures"+c+"other"+c+"numbers.jpg");
       texMan.addTexture("numbers", numbers);
@@ -263,10 +174,6 @@ class JPCTDemo {
          }
       }
 
-      /**
-       * Load and setup the weapon. To ease the placement of the weapon in the gameloop,
-       * we are transforming the mesh here too.
-       */
       Object3D[] miss=Loader.load3DS("3ds"+c+"weapon.3ds", 2);
       weapon=miss[0];
       weapon.rotateY(-(float) Math.PI/2f);
@@ -287,37 +194,21 @@ class JPCTDemo {
       weapon.setEnvmapMode(Object3D.ENVMAP_WORLDSPACE);
       theWorld.addObject(weapon);
 
-      /**
-       * Load the level...
-       */
+
       Object3D[] levelParts=Loader.load3DS("3ds"+c+"ql.3ds", 20f);
       level=new Object3D(0);
 
       for (int i=0; i<levelParts.length; i++) {
          Object3D part=levelParts[i];
-         /**
-          * The level is not rotated correctly after loading (something all Quake3 levels
-          * share when converted to 3DS-format, because Quake3 uses a different coordinate
-          * system than jPCT.
-          */
+ 
          part.setCenter(SimpleVector.ORIGIN);
          part.rotateX((float)-Math.PI/2);
          part.rotateMesh();
          part.setRotationMatrix(new Matrix());
 
-         /**
-          * Merge all parts into one object. This is usefull for this level, because the parts
-          * don't represent sectors or zones but are widespreaded over the level, which would render
-          * an octree useless for this level. By merging them all, the octree can be used much
-          * more efficient.
-          */
          level=Object3D.mergeObjects(level, part);
       }
 
-      /**
-       * Create triangle strips (good for OpenGL performance) and setup the collision
-       * detection mode. Furthermore, an octree is created for the level.
-       */
       level.createTriangleStrips(2);
       level.setCollisionMode(Object3D.COLLISION_CHECK_OTHERS);
       level.setCollisionOptimization(Object3D.COLLISION_DETECTION_OPTIMIZED);
@@ -326,23 +217,13 @@ class JPCTDemo {
       oc.setCollisionUse(OcTree.COLLISION_USE);
       level.setOcTree(oc);
 
-      /**
-       * The level won't move, so...
-       */
+
       level.enableLazyTransformations();
 
-      /**
-       * Done! Now add the result to the world.
-       */
+
       theWorld.addObject(level);
 
-      /**
-       * Setup the elevator. The elevator is a more or
-       * less hardcoded entity in this level that serves
-       * demonstration purposes only. You'll most
-       * likely have to implement a more advanced elevator
-       * management if you want to use elevators at all.
-       */
+
       elevator=Primitives.getBox(15f,0.1f);
       elevator.rotateY((float)Math.PI/4);
       elevator.setOrigin(new SimpleVector(800,-90,-450));
@@ -353,39 +234,20 @@ class JPCTDemo {
       elevator.setEnvmapMode(Object3D.ENVMAP_CAMERASPACE);
       theWorld.addObject(elevator);
 
-      /**
-       * Place the camera at the starting position.
-       */
       camera=theWorld.getCamera();
       camera.setPosition(STARTING_POS);
 
-      /**
-       * Now build() all objects.
-       */
+
       theWorld.buildAllObjects();
 
-      /**
-       * This is needed for weapon movement, but has to be done after calling build()
-       * on the weapon because build() resets the rotation pivot to the object's
-       * (calculated) center.
-       */
       weapon.setRotationPivot(new SimpleVector(0, 0, 0));
 
-      /**
-       * Setup some optimizations for outdoor rendering (the level is not very outdoorish at
-       * all, but at least the framebuffer needs clearing because the level is not closed.
-       */
       Config.collideOffset=250;
       Config.tuneForOutdoor();
 
-      /**
-       * Do some AWT setup work
-       */
+
       initializeFrame();
 
-      /**
-       * Here we go...!
-       */
       gameLoop();
    }
 
